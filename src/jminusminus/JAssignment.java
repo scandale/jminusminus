@@ -191,3 +191,74 @@ class JPlusAssignOp extends JAssignment {
     }
 
 }
+
+/**
+ * The AST node for a -= expression. A -= expression has two operands: a lhs and
+ * a rhs.
+ */
+
+class JMinusAssignOp extends JAssignment {
+
+    /**
+     * Construct the AST node for a += expression given its lhs and rhs
+     * operands.
+     * 
+     * @param line
+     *            line in which the assignment expression occurs in the source
+     *            file.
+     * @param lhs
+     *            the lhs operand.
+     * @param rhs
+     *            the rhs operand.
+     */
+
+    public JMinusAssignOp(int line, JExpression lhs, JExpression rhs) {
+        super(line, "-=", lhs, rhs);
+    }
+
+    /**
+     * Analyze the lhs and rhs, rewrite rhs as lhs + rhs (string concatenation)
+     * if lhs is a String, and set the result type.
+     * 
+     * @param context
+     *            context in which names are resolved.
+     * @return the analyzed (and possibly rewritten) AST subtree.
+     */
+
+    public JExpression analyze(Context context) {
+		lhs = (JExpression)lhs.analyze(context);
+		rhs = (JExpression)rhs.analyze(context);
+		lhs.type().mustMatchExpected( line(), Type.INT);
+		rhs.type().mustMatchExpected( line(), Type.INT);
+		type = Type.INT;
+		return this ;
+    }
+
+    /**
+     * Code generation for += involves, generating code for loading any
+     * necessary l-value onto the stack, for (unless a string concatenation)
+     * loading the r-value, for (unless a statement) copying the r-value to its
+     * proper place on the stack, and for doing the store.
+     * 
+     * @param output
+     *            the code emitter (basically an abstraction for producing the
+     *            .class file).
+     */
+
+    public void codegen(CLEmitter output) {
+        ((JLhs) lhs).codegenLoadLhsLvalue(output);
+        if (lhs.type().equals(Type.STRING)) {
+            rhs.codegen(output);
+        } else {
+            ((JLhs) lhs).codegenLoadLhsRvalue(output);
+            rhs.codegen(output);
+            output.addNoArgInstruction(ISUB);
+        }
+        if (!isStatementExpression) {
+            // Generate code to leave the r-value atop stack
+            ((JLhs) lhs).codegenDuplicateRvalue(output);
+        }
+        ((JLhs) lhs).codegenStore(output);
+    }
+
+}
