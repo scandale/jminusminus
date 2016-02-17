@@ -989,7 +989,7 @@ public class Parser {
      *       conditionalAndExpression // level 13
      *           [( ASSIGN  // conditionalExpression
      *            | PLUS_ASSIGN // must be valid lhs
-     *            )
+     *            | MINUS_ASSIGN ) // must be valid lhs
      *            assignmentExpression]
      * </pre>
      * 
